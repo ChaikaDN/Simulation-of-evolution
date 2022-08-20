@@ -3,7 +3,6 @@ class Object:
 
     def __init__(self, position):
         self.position = position
-        self.is_alive = True
         # self.direction = Object.dirlist[0]
 
     def is_neighbor(self, obj):

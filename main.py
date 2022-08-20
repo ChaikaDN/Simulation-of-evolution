@@ -34,7 +34,7 @@ class App:
                              random.randint(0, self.PIXEL_COUNT-1))) for _ in range(256)]
         cell_list = [Cell((random.randint(0, self.PIXEL_COUNT - 1),
                            random.randint(0, self.PIXEL_COUNT - 1)),
-                          [random.randint(0, 7) for _ in range(64)]) for _ in range(128)]  # пока в генотипе тольго шаги
+                          [random.randint(0, 23) for _ in range(64)]) for _ in range(128)]
         meat_list = []
 
         while True:
@@ -46,26 +46,30 @@ class App:
                         pass
 
             self.draw_field()
-
+            print(cell_list[0].gene_pos)
             for grass in grass_list:
                 self.draw_obj(grass)
             for meat in meat_list:
                 self.draw_obj(meat)
-
             for cell in list(cell_list):
                 self.draw_obj(cell)
+
                 tmp = cell.position
-                cell.live(cell_list)
+                cell.live(cell_list, grass_list, meat_list)
                 cell.position = tmp if cell.check_collision(cell_list) else cell.position
 
                 collided_grass = cell.check_collision(grass_list)
                 collided_meat = cell.check_collision(meat_list)
+
                 if collided_grass:
                     cell.health += 50
                     grass_list.remove(collided_grass)
                 if collided_meat:
                     cell.health += 70
                     meat_list.remove(collided_meat)
+
+                if cell.is_ready_to_divide:
+                    cell_list.append(cell.divide())
 
                 if not cell.is_alive:
                     meat_list.append(Meat(cell.position))
