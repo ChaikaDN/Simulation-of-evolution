@@ -6,14 +6,15 @@ class Object:
         self.is_alive = True
         # self.direction = Object.dirlist[0]
 
-    # def check_neighbor_type(self, obj):  # возвращает тип объекта по соседству относительно position или None
-    #     return obj.objtype if self.is_neighbor(obj) else None
-    #
     def is_neighbor(self, obj):
         return tuple(x - y for x, y in zip(self.position, obj.position)) in self.dirlist
-    #
-    # def check_collision(self, obj):  # возвращает True / False
-    #     return self.position == obj.position
+
+    def check_near_position(self, obj_list):
+        neighbors = []
+        for obj in obj_list:
+            if self.is_neighbor(obj):
+                neighbors.append(obj)
+        return neighbors
 
     def check_near_position(self, objs):
         neighbors = []
@@ -24,3 +25,11 @@ class Object:
                     if len(neighbors) == 8:  # проверить
                         return neighbors
         return neighbors
+
+    def check_collision(self, obj_list):
+        for obj in obj_list:
+            if self.is_collide(obj):
+                return obj
+
+    def is_collide(self, obj):
+        return self.position == obj.position and self is not obj  # проверить второе условие

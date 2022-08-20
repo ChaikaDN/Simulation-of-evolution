@@ -2,7 +2,6 @@ import random
 from grass import Grass
 from cell import Cell
 from meat import Meat
-from life_manager import live, is_collide, check_neighbors
 import pygame as pg
 import pygame.gfxdraw
 
@@ -23,9 +22,9 @@ class App:
         pygame.gfxdraw.box(self.surface, (self.WIDTH, 0, self.PANEL_SIZE, self.HEIGHT), (128, 128, 128))
 
     def draw_obj(self, obj):
-        self.draw_cell(obj.position[0] * self.PIXEL_SIZE, obj.position[1] * self.PIXEL_SIZE, obj.color)
+        self.draw_pixel(obj.position[0] * self.PIXEL_SIZE, obj.position[1] * self.PIXEL_SIZE, obj.color)
 
-    def draw_cell(self, x, y, color=(0, 0, 0)):
+    def draw_pixel(self, x, y, color=(0, 0, 0)):
         pygame.gfxdraw.box(self.surface,
                            (x, y, self.PIXEL_SIZE, self.PIXEL_SIZE),
                            color)
@@ -35,7 +34,7 @@ class App:
                              random.randint(0, self.PIXEL_COUNT-1))) for _ in range(256)]
         cell_list = [Cell((random.randint(0, self.PIXEL_COUNT - 1),
                            random.randint(0, self.PIXEL_COUNT - 1)),
-                          [random.randint(0, 7) for _ in range(64)]) for _ in range(128)]
+                          [random.randint(0, 7) for _ in range(64)]) for _ in range(128)]  # пока в генотипе тольго шаги
         meat_list = []
 
         while True:
@@ -50,22 +49,21 @@ class App:
 
             for grass in grass_list:
                 self.draw_obj(grass)
-
             for meat in meat_list:
                 self.draw_obj(meat)
 
             for cell in list(cell_list):
                 self.draw_obj(cell)
                 tmp = cell.position
-                live(cell, cell_list)
-                cell.position = tmp if is_collide(cell, cell_list) else cell.position
+                cell.live(cell_list)
+                cell.position = tmp if cell.check_collision(cell_list) else cell.position
 
-                collided_grass = is_collide(cell, grass_list)
-                collided_meat = is_collide(cell, meat_list)
+                collided_grass = cell.check_collision(grass_list)
+                collided_meat = cell.check_collision(meat_list)
                 if collided_grass:
                     cell.health += 50
                     grass_list.remove(collided_grass)
-                if is_collide(cell, meat_list):
+                if collided_meat:
                     cell.health += 70
                     meat_list.remove(collided_meat)
 
