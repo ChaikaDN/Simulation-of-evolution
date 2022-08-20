@@ -7,7 +7,7 @@ import pygame.gfxdraw
 
 
 class App:
-    def __init__(self, pixel_size=10, pixel_count=90, panel_size=400):
+    def __init__(self, pixel_size=30, pixel_count=32, panel_size=400):
         pg.init()
         self.PIXEL_SIZE = pixel_size
         self.PIXEL_COUNT = pixel_count
@@ -31,10 +31,10 @@ class App:
 
     def run(self):
         grass_list = [Grass((random.randint(0, self.PIXEL_COUNT-1),
-                             random.randint(0, self.PIXEL_COUNT-1))) for _ in range(256)]
+                             random.randint(0, self.PIXEL_COUNT-1))) for _ in range(64)]
         cell_list = [Cell((random.randint(0, self.PIXEL_COUNT - 1),
                            random.randint(0, self.PIXEL_COUNT - 1)),
-                          [random.randint(0, 23) for _ in range(64)]) for _ in range(128)]
+                          [63 for _ in range(64)]) for _ in range(64)]
         meat_list = []
 
         while True:
@@ -46,12 +46,23 @@ class App:
                         pass
 
             self.draw_field()
-            print(cell_list[0].gene_pos)
+
             for grass in grass_list:
                 self.draw_obj(grass)
-            for meat in meat_list:
+            for meat in list(meat_list):
+                meat.age += 1
+                if meat.age >= 128:
+                    meat_list.remove(meat)
                 self.draw_obj(meat)
+
             for cell in list(cell_list):
+                if cell.position[0] // self.PIXEL_COUNT >= 1 or cell.position[1] // self.PIXEL_COUNT >= 1:  # костыль!
+                    cell_list.remove(cell)
+
+                for c in list(cell_list):  # костыль!
+                    if cell.is_collide(c):
+                        cell.is_alive = False
+
                 self.draw_obj(cell)
 
                 tmp = cell.position
@@ -63,9 +74,20 @@ class App:
 
                 if collided_grass:
                     cell.health += 50
+
+                    cell.color[0] -= 5 if cell.color[0] >= 5 else 0
+                    cell.color[1] += 5 if cell.color[1] <= 250 else 0
+                    cell.color[2] -= 5 if cell.color[2] >= 5 else 0
+
                     grass_list.remove(collided_grass)
+
                 if collided_meat:
                     cell.health += 70
+
+                    cell.color[0] += 5 if cell.color[0] <= 250 else 0
+                    cell.color[1] -= 5 if cell.color[1] >= 5 else 0
+                    cell.color[2] -= 5 if cell.color[2] >= 5 else 0
+
                     meat_list.remove(collided_meat)
 
                 if cell.is_ready_to_divide:
@@ -77,7 +99,7 @@ class App:
 
             pg.display.set_caption(f'{len(cell_list)} | {str(self.clock.get_fps())}')
             pg.display.flip()
-            self.clock.tick(5)
+            self.clock.tick(15)
 
 
 if __name__ == '__main__':

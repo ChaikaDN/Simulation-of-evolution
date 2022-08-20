@@ -1,3 +1,4 @@
+import random
 from random import randint
 from object import Object
 
@@ -10,7 +11,7 @@ def check_obj_type(obj=None):
 class Cell(Object):
     def __init__(self, pos, dna):
         """
-        гены 64:
+        Гены 64:
         0..7 - сделать шаг выбрать сторону в зависимости от числа.
         8..15 - схватить.
         16..23 - посмотреть (бот остается на месте, а указатель команды переходит).
@@ -20,19 +21,20 @@ class Cell(Object):
         """
 
         super().__init__(pos)
-        self.color = (0, 0, 0)
+        self.color = [0, 0, 0]
         self.health = randint(40, 60)
         self.dna = dna
         self.gene_pos = 0
         self.generation = 1  # пригодится потом
+        self.age = 0
 
         self.is_alive = True
         self.is_ready_to_divide = False
 
     def step(self, gene):
         self.position = tuple(sum(i) % 90 for i in zip(self.position, Object.dirlist[gene % 8]))  # % PIXEL_COUNT (90)
-        self.gene_jump(gene % 8)  # gene % 8 надо будет заменить на условный переход
-        # self.conditional_jump(check_obj_type())
+        # self.gene_jump(gene % 8)  # gene % 8 надо будет заменить на условный переход
+        self.conditional_jump(check_obj_type())
 
     def look(self, gene, *obj_lists):  # gene = 0..7
         pos = tuple(sum(x) for x in zip(self.position, self.dirlist[gene]))
@@ -41,6 +43,19 @@ class Cell(Object):
                 if obj.position == pos:
                     return self.conditional_jump(check_obj_type(obj))
         return self.conditional_jump(check_obj_type())
+
+    def kill(self, gene, cell_list):
+        pos = tuple(sum(x) for x in zip(self.position, self.dirlist[gene]))
+        for cell in cell_list:
+            if cell.position == pos:
+                cell.is_alive = False
+
+    def photosynthesis(self, light_rate):
+        self.health += light_rate
+        self.color[0] -= 5 if self.color[0] >= 5 else 0
+        self.color[1] -= 5 if self.color[1] >= 5 else 0
+        self.color[2] += 5 if self.color[2] <= 250 else 0
+        self.gene_jump(1)
 
     def gene_jump(self, step):
         self.gene_pos = (self.gene_pos + step) % len(self.dna)
@@ -61,7 +76,7 @@ class Cell(Object):
 
     def divide(self, *obj_lists):  # нужен рефакторинг, obj_lists = cells, walls
         self.health //= 2
-        self.gene_jump(1)
+
         pos_list = [tuple(sum(x) for x in zip(self.position, direction)) for direction in self.dirlist]
 
         for obj_list in obj_lists:
@@ -70,11 +85,13 @@ class Cell(Object):
                     pos_list.remove(obj.position)
 
         if pos_list:
-            child = Cell(pos_list[0], self.evolve() if not randint(0, 4) else self.dna)
-            child.color = (0, 0, 255)
+            child = Cell(random.choice(pos_list), self.evolve() if not randint(0, 4) else self.dna)
+            child.color = self.color
             return child
         else:
-            self.health = 0
+            self.is_alive = False
+
+        self.gene_jump(1)
 
     def evolve(self):
         dna = self.dna[:]
@@ -82,6 +99,11 @@ class Cell(Object):
         return dna
 
     def live(self, *obj_lists):
+        self.age += 1
+        if self.age >= 128:
+            self.is_alive = False
+            return
+
         if self.health > 100:
             self.is_ready_to_divide = True
         elif self.health > 0:
@@ -91,8 +113,7 @@ class Cell(Object):
                 case gene if 0 <= gene <= 7:
                     self.step(gene)
                 case gene if 8 <= gene <= 15:
-                    # cell.catch(gene)
-                    pass
+                    self.kill(gene % 8, obj_lists[0])
                 case gene if 16 <= gene <= 23:
                     self.look(gene % 8, *obj_lists)
                 case gene if 24 <= gene <= 31:
@@ -101,7 +122,7 @@ class Cell(Object):
                 case gene if 32 <= gene <= 62:
                     self.gene_jump(gene)
                 case 63:
-                    # cell.photosynthesis(gene)
+                    self.photosynthesis(random.choice((1, 2)))
                     pass
             self.health -= 1
         else:

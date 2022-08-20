@@ -3,6 +3,7 @@ class Object:
 
     def __init__(self, position):
         self.position = position
+        self.color = [0, 0, 0]
         # self.direction = Object.dirlist[0]
 
     def is_neighbor(self, obj):
