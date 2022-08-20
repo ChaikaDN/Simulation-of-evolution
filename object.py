@@ -16,16 +16,6 @@ class Object:
                 neighbors.append(obj)
         return neighbors
 
-    def check_near_position(self, objs):
-        neighbors = []
-        for obj in objs:
-            for direction in self.dirlist:
-                if tuple(sum(i) for i in zip(self.position, direction)) == obj.position:
-                    neighbors.append(obj)
-                    if len(neighbors) == 8:  # проверить
-                        return neighbors
-        return neighbors
-
     def check_collision(self, obj_list):
         for obj in obj_list:
             if self.is_collide(obj):
