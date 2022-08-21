@@ -1,9 +1,11 @@
 class Object:
     dirlist = [(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)]
 
-    def __init__(self, position):
+    def __init__(self, position, color=None):
+        if color is None:
+            color = [0, 0, 0]
         self.position = position
-        self.color = [0, 0, 0]
+        self.color = color
         # self.direction = Object.dirlist[0]
 
     def is_neighbor(self, obj):
