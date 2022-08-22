@@ -1,5 +1,5 @@
 import random
-# from grass import Grass
+from text_drawer import Text
 from cell import Cell
 from meat import Meat
 import pygame as pg
@@ -7,8 +7,9 @@ import pygame.gfxdraw
 
 
 class App:
-    def __init__(self, pixel_size=15, pixel_count=64, panel_size=400):
+    def __init__(self, pixel_size=30, pixel_count=32, panel_size=400):
         pg.init()
+        self.FPS = 30
         self.PIXEL_SIZE = pixel_size
         self.PIXEL_COUNT = pixel_count
         self.PANEL_SIZE = panel_size
@@ -26,7 +27,7 @@ class App:
 
     def draw_pixel(self, x, y, size, color=(0, 0, 0)):
         pygame.gfxdraw.box(self.surface,
-                           (x+(self.PIXEL_SIZE-size)/2, y+(self.PIXEL_SIZE-size)/2, size, size),
+                           (x + (self.PIXEL_SIZE - size) / 2, y + (self.PIXEL_SIZE - size) / 2, size, size),
                            color)
 
     def run(self):
@@ -43,60 +44,69 @@ class App:
                 if event.type == pg.QUIT:
                     exit()
                 elif event.type == pg.KEYDOWN:
-                    if event.key == pg.K_s:
-                        pass
+                    if event.key == pg.K_1:
+                        self.FPS = 5
+                    elif event.key == pg.K_2:
+                        self.FPS = 15
+                    elif event.key == pg.K_3:
+                        self.FPS = 30
+                    elif event.key == pg.K_4:
+                        self.FPS = 60
+                    elif event.key == pg.K_SPACE:
+                        self.paused()
 
             self.draw_field()
-
-            for grass in grass_list:
-                self.draw_obj(grass, self.PIXEL_SIZE/1.5)
+            # for grass in grass_list:
+            #     self.draw_obj(grass, self.PIXEL_SIZE/1.5)
             for meat in list(meat_list):
-                self.draw_obj(meat, self.PIXEL_SIZE/1.5)
-                meat.live(meat_list)
+                self.draw_obj(meat, self.PIXEL_SIZE / 1.5)
+                meat.live()
+                if not meat.is_alive:
+                    meat_list.remove(meat)
 
             for cell in list(cell_list):
-
-                for c in list(cell_list):  # костыль!
-                    if c.position == cell.position and c is not cell:
-                        c.is_alive = False
-                self.draw_obj(cell, self.PIXEL_SIZE-2)
+                self.draw_obj(cell, self.PIXEL_SIZE - 2)
 
                 tmp = cell.position
-                cell.live(self.PIXEL_COUNT, cell_list, grass_list, meat_list)
+                cell.live(self.PIXEL_COUNT, cell_list, meat_list)
                 cell.position = tmp if cell.check_collision(cell_list) else cell.position
 
-                collided_grass = cell.check_collision(grass_list)
-                collided_meat = cell.check_collision(meat_list)
-
-                if collided_grass:
-                    cell.health += 50
-
-                    cell.color[0] -= 5 if cell.color[0] >= 5 else 0
-                    cell.color[1] -= 5 if cell.color[1] >= 5 else 0
-                    cell.color[2] += 5 if cell.color[2] <= 150 else 0
-
-                    grass_list.remove(collided_grass)
-
-                if collided_meat:
-                    cell.health += 70
-
-                    cell.color[0] += 5 if cell.color[0] <= 150 else 0
-                    cell.color[1] -= 5 if cell.color[1] >= 5 else 0
-                    cell.color[2] -= 5 if cell.color[2] >= 5 else 0
-
-                    meat_list.remove(collided_meat)
+                for food in meat_list:  # + grass_list + ...
+                    if cell.is_collide(food):
+                        cell.eat(food)
 
                 if cell.is_ready_to_divide:
                     cell.divide(self.PIXEL_COUNT, cell_list)
-
                 if not cell.is_alive:
                     meat_list.append(Meat(cell.position))
                     cell_list.remove(cell)
 
-            pg.display.set_caption(f'{len(cell_list)} | {str(self.clock.get_fps())}')
-            pg.display.flip()
-            self.clock.tick(30)
+            messages = [Text(f'Cell count:  {len(cell_list)}', (self.WIDTH + 30, 15), 25)]
+            if cell_list:
+                messages.append(Text('Oldest cell genome:', (self.WIDTH + 30, 60), 25))
+                pos_y = 95
+                # for i, gene in enumerate(cell_list[0].dna):
+                #     messages.append(Text(f'{gene} ', (self.WIDTH - 10 + 40 * (i % 8 + 1), pos_y + 35 * (i // 8)), 25))
+                messages.append(Text(f'Max generation: {max(cell_list, key=lambda x: x.generation).generation}',
+                                     (self.WIDTH + 30, 385), 25))
 
+            for message in messages:
+                message.draw(self.surface)
+            pg.display.set_caption(f'FPS: {str(self.clock.get_fps())}')
+            pg.display.flip()
+            self.clock.tick(self.FPS)
+
+    def paused(self):
+        m = Text('Paused', (self.WIDTH + 300, 15), 25)
+        while True:
+            m.draw(self.surface)
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    exit()
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_SPACE:
+                        return
+            pg.display.flip()
 
 if __name__ == '__main__':
     app = App()

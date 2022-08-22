@@ -5,11 +5,10 @@ import random
 class Meat(Object):
     def __init__(self, position):
         super().__init__(position, color=[200, 0, 0])
-        self.age = 0
-        self.max_age = random.randint(100, 150)
+        self.health = random.randint(40, 60)
         self.is_alive = True
 
-    def live(self, meat_list):
-        self.age += 1
-        if self.age >= self.max_age:
-            meat_list.remove(self)
+    def live(self):
+        self.health -= 0.2
+        if self.health <= 0:
+            self.is_alive = False
